@@ -1,0 +1,152 @@
+# Trusted News Sources Configuration
+
+# Official Company Blogs and Press Releases
+official_sources:
+  openai:
+    name: "OpenAI Blog"
+    url: "https://openai.com/blog"
+    rss: "https://openai.com/blog/rss.xml"
+    credibility: 100
+    
+  google_ai:
+    name: "Google AI Blog"
+    url: "https://blog.google/technology/ai/"
+    rss: "https://blog.google/technology/ai/rss"
+    credibility: 100
+    
+  meta_ai:
+    name: "Meta AI"
+    url: "https://ai.meta.com/blog/"
+    rss: "https://ai.meta.com/blog/rss/"
+    credibility: 100
+    
+  anthropic:
+    name: "Anthropic News"
+    url: "https://www.anthropic.com/news"
+    rss: "https://www.anthropic.com/news/rss"
+    credibility: 100
+    
+  microsoft_ai:
+    name: "Microsoft AI Blog"
+    url: "https://blogs.microsoft.com/ai/"
+    rss: "https://blogs.microsoft.com/ai/feed/"
+    credibility: 100
+    
+  nvidia:
+    name: "NVIDIA AI Blog"
+    url: "https://blogs.nvidia.com/blog/category/deep-learning/"
+    rss: "https://blogs.nvidia.com/blog/category/deep-learning/feed/"
+    credibility: 100
+    
+  deepmind:
+    name: "Google DeepMind"
+    url: "https://deepmind.google/discover/blog/"
+    rss: "https://deepmind.google/blog/rss.xml"
+    credibility: 100
+
+# Reputable Tech Media
+media_outlets:
+  mit_tech_review:
+    name: "MIT Technology Review - AI"
+    url: "https://www.technologyreview.com/topic/artificial-intelligence/"
+    rss: "https://www.technologyreview.com/topic/artificial-intelligence/feed"
+    credibility: 90
+    
+  wired_ai:
+    name: "Wired - AI"
+    url: "https://www.wired.com/tag/artificial-intelligence/"
+    rss: "https://www.wired.com/feed/tag/ai/latest/rss"
+    credibility: 85
+    
+  the_verge:
+    name: "The Verge - AI"
+    url: "https://www.theverge.com/ai-artificial-intelligence"
+    rss: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"
+    credibility: 85
+    
+  reuters_tech:
+    name: "Reuters Technology"
+    url: "https://www.reuters.com/technology/"
+    rss: "https://www.reuters.com/technology/rss"
+    credibility: 95
+    
+  bloomberg_tech:
+    name: "Bloomberg Technology"
+    url: "https://www.bloomberg.com/technology"
+    rss: "https://www.bloomberg.com/technology/rss"
+    credibility: 90
+    
+  techcrunch_ai:
+    name: "TechCrunch - AI"
+    url: "https://techcrunch.com/category/artificial-intelligence/"
+    rss: "https://techcrunch.com/category/artificial-intelligence/feed/"
+    credibility: 80
+
+# Research Sources
+research_sources:
+  arxiv_ai:
+    name: "arXiv AI Papers"
+    url: "https://arxiv.org"
+    categories:
+      - "cs.AI"  # Artificial Intelligence
+      - "cs.LG"  # Machine Learning
+      - "cs.CL"  # Computation and Language
+    credibility: 95
+    min_citations: 10  # Only high-impact papers
+
+# Source Domains for Verification
+trusted_domains:
+  tier_1:  # Highest trust
+    - "openai.com"
+    - "blog.google"
+    - "ai.meta.com"
+    - "anthropic.com"
+    - "microsoft.com"
+    - "nvidia.com"
+    - "deepmind.google"
+    - "arxiv.org"
+    
+  tier_2:  # High trust media
+    - "technologyreview.com"
+    - "reuters.com"
+    - "bloomberg.com"
+    - "nature.com"
+    - "science.org"
+    
+  tier_3:  # Reputable tech media
+    - "wired.com"
+    - "theverge.com"
+    - "techcrunch.com"
+    - "arstechnica.com"
+
+# AI-related keywords for initial filtering
+ai_keywords:
+  primary:
+    - "artificial intelligence"
+    - "machine learning"
+    - "deep learning"
+    - "neural network"
+    - "large language model"
+    - "LLM"
+    - "GPT"
+    - "transformer"
+    - "generative AI"
+    
+  companies:
+    - "OpenAI"
+    - "Google AI"
+    - "DeepMind"
+    - "Meta AI"
+    - "Anthropic"
+    - "Microsoft AI"
+    - "NVIDIA"
+    
+  topics:
+    - "AI model"
+    - "AI research"
+    - "AI safety"
+    - "AI regulation"
+    - "AI policy"
+    - "computer vision"
+    - "natural language processing"
+    - "reinforcement learning"
