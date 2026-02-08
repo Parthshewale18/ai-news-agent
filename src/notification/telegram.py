@@ -4,13 +4,13 @@ Handles user subscriptions and news delivery
 """
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, ContextTypes
-from telegram.constants import ParseMode
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.constants import ParseMode, ChatAction
 from sqlalchemy.orm import Session
-from src.storage.database import SessionLocal, Subscriber
+from src.storage.database import SessionLocal, Subscriber, Article
 from datetime import datetime
 from config.settings import settings
-from typing import List
+from typing import List, Dict
 import asyncio
 
 
@@ -29,6 +29,9 @@ class TelegramNotifier:
         self.application.add_handler(CommandHandler("stop", self.stop_command))
         self.application.add_handler(CommandHandler("help", self.help_command))
         self.application.add_handler(CommandHandler("status", self.status_command))
+        
+        # Callback handler for inline buttons (Read More)
+        self.application.add_handler(CallbackQueryHandler(self.button_handler))
     
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start command - subscribe user"""
@@ -74,16 +77,9 @@ class TelegramNotifier:
                 welcome_message = (
                     "🤖 *Welcome to AI News Alert Bot!*\n\n"
                     "You'll receive instant notifications for verified AI news:\n\n"
-                    "✅ Completely FREE\n"
-                    "✅ No spam, only quality news\n"
-                    "✅ 3-5 updates per day\n"
-                    "✅ Unsubscribe anytime with /stop\n\n"
-                    "*What you'll get:*\n"
-                    "• Major AI model releases\n"
-                    "• AI research breakthroughs\n"
-                    "• AI policy updates\n"
-                    "• Industry news\n\n"
-                    "News is verified from trusted sources like OpenAI, Google AI, MIT Tech Review, and more.\n\n"
+                    "✅ Highly relevant AI news\n"
+                    "✅ Daily Digests (New!)\n"
+                    "✅ 100% Free & Ad-free\n\n"
                     "Use /help to see all commands."
                 )
                 
@@ -146,19 +142,11 @@ class TelegramNotifier:
             "/status - Check your subscription status\n"
             "/help - Show this help message\n\n"
             "*About:*\n"
-            "This bot delivers verified AI news from trusted sources "
-            "like OpenAI, Google AI, Meta, Anthropic, and reputable media outlets.\n\n"
+            "This bot delivers verified AI news from trusted sources.\n\n"
             "*Features:*\n"
-            "• 100% free and open source\n"
-            "• No spam or ads\n"
-            "• Credibility-verified news only\n"
-            "• Simple, non-technical summaries\n\n"
-            "*Frequency:*\n"
-            "Typically 3-5 meaningful updates per day.\n\n"
-            "*Privacy:*\n"
-            "We only store your chat ID to send notifications. "
-            "No personal data is shared or sold.\n\n"
-            "Questions? Contact: @YourUsername"
+            "• Instant alerts for major AI news\n"
+            "• Daily Digest of top stories (New!)\n"
+            "• Click 'Read More' for details\n"
         )
         
         await update.message.reply_text(help_text, parse_mode=ParseMode.MARKDOWN)
@@ -174,20 +162,15 @@ class TelegramNotifier:
             if subscriber and subscriber.is_active:
                 status_text = (
                     f"✅ *Subscription Active*\n\n"
-                    f"Subscribed since: {subscriber.subscribed_at.strftime('%Y-%m-%d %H:%M UTC')}\n\n"
-                    f"You're receiving verified AI news updates!"
+                    f"Subscribed since: {subscriber.subscribed_at.strftime('%Y-%m-%d %H:%M UTC')}"
                 )
             elif subscriber:
                 status_text = (
-                    f"❌ *Subscription Inactive*\n\n"
-                    f"Unsubscribed on: {subscriber.unsubscribed_at.strftime('%Y-%m-%d %H:%M UTC') if subscriber.unsubscribed_at else 'Unknown'}\n\n"
-                    f"Send /start to resubscribe!"
+                    f"❌ *Subscription Inactive*\n"
                 )
             else:
                 status_text = (
-                    "📭 *Not Subscribed*\n\n"
-                    "You're not currently subscribed to AI news updates.\n\n"
-                    "Send /start to subscribe!"
+                    "📭 *Not Subscribed*\n"
                 )
             
             await update.message.reply_text(status_text, parse_mode=ParseMode.MARKDOWN)
@@ -198,6 +181,116 @@ class TelegramNotifier:
         finally:
             db.close()
     
+    async def button_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle button clicks"""
+        query = update.callback_query
+        await query.answer()  # Acknowledge click
+        
+        data = query.data
+        if data.startswith("read_"):
+            # Format: read_{article_id}
+            article_id = int(data.split("_")[1])
+            await self.send_article_detail(query.message.chat_id, article_id)
+    
+    async def send_article_detail(self, chat_id: int, article_id: int):
+        """Send full details for a requested article"""
+        db = SessionLocal()
+        try:
+            article = db.query(Article).filter(Article.id == article_id).first()
+            if not article:
+                await self.application.bot.send_message(chat_id, "⚠️ Article not found.")
+                return
+
+            message = (
+                f"📰 *{article.title}*\n\n"
+                f"{article.summary}\n\n"
+                f"*Source:* {article.source_name}\n"
+                f"[{article.source_domain}]({article.url})"
+            )
+            
+            await self.application.bot.send_message(
+                chat_id=chat_id,
+                text=message,
+                parse_mode=ParseMode.MARKDOWN,
+                disable_web_page_preview=False
+            )
+            
+        except Exception as e:
+            print(f"❌ Error sending detail: {e}")
+        finally:
+            db.close()
+
+    async def send_daily_digest(self, digest: Dict, article_map: Dict[int, int] = None) -> int:
+        """
+        Send daily digest to all subscribers
+        
+        Args:
+            digest: JSON object with intro, items, outro
+            article_map: Mapping of digest item index (if needed) to DB article ID
+                         Actually, let's assume digest['items'] contains 'id' matching DB id.
+                         
+        Returns:
+            Number of successful sends
+        """
+        db = SessionLocal()
+        try:
+            subscribers = db.query(Subscriber).filter(Subscriber.is_active == True).all()
+            
+            if not subscribers:
+                return 0
+            
+            # Construct message
+            message = f"☕ *Daily AI News Digest*\n\n{digest.get('intro', '')}\n\n"
+            
+            keyboard = []
+            
+            for item in digest.get('items', []):
+                # Add item text
+                message += f"🔹 *{item.get('headline')}*\n{item.get('impact')}\n\n"
+                
+                # Add button
+                # We use a short callback data: read_{id}
+                # Ensure id exists
+                if 'id' in item:
+                    keyboard.append([InlineKeyboardButton(
+                        f"Read: {item.get('headline')[:20]}...", 
+                        callback_data=f"read_{item['id']}"
+                    )])
+            
+            message += f"{digest.get('outro', '')}"
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            print(f"📤 Sending Daily Digest to {len(subscribers)} subscribers...")
+            
+            tasks = []
+            for sub in subscribers:
+                tasks.append(
+                    self.application.bot.send_message(
+                        chat_id=sub.chat_id,
+                        text=message,
+                        parse_mode=ParseMode.MARKDOWN,
+                        reply_markup=reply_markup
+                    )
+                )
+            
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            success_count = 0
+            for res in results:
+                if not isinstance(res, Exception):
+                    success_count += 1
+                else:
+                    print(f"❌ Send failed: {res}")
+            
+            print(f"✅ Digest sent to {success_count}/{len(subscribers)} subscribers")
+            return success_count
+            
+        except Exception as e:
+            print(f"❌ Error sending daily digest: {e}")
+            return 0
+        finally:
+            db.close()
+
     async def send_news_notification(self, chat_id: str, article: dict, summary: dict) -> bool:
         """
         Send news notification to a single subscriber

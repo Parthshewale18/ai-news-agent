@@ -8,12 +8,13 @@ import time
 from datetime import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 
 from src.ingestion.rss_fetcher import RSSFetcher
 from src.filtering.ai_classifier import AIRelevanceFilter
 from src.summarization.llm_summarizer import NewsSummarizer
 from src.notification.telegram import TelegramNotifier
-from src.storage.database import SessionLocal, Article, init_db
+from src.storage.database import SessionLocal, Article, init_db, get_recent_articles
 from config.settings import settings
 
 
@@ -139,6 +140,39 @@ class NewsAgentScheduler:
             print(f"❌ Pipeline error: {e}")
             import traceback
             traceback.print_exc()
+
+    async def run_daily_digest(self):
+        """Generate and send daily digest"""
+        print("\n" + "="*60)
+        print(f"🗞️ Running Daily Digest at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print("="*60 + "\n")
+        
+        try:
+            db = SessionLocal()
+            recent_articles = get_recent_articles(db, hours=24)
+            db.close()
+            
+            if not recent_articles:
+                print("⚠️ No recent high-relevance articles found for digest.")
+                return
+            
+            print(f"📊 Found {len(recent_articles)} candidates for daily digest")
+            
+            # Generate digest content
+            digest = self.summarizer.generate_daily_digest(recent_articles)
+            
+            if not digest:
+                print("❌ Failed to generate digest content.")
+                return
+                
+            # Send digest
+            await self.telegram.send_daily_digest(digest)
+            print("✅ Daily digest sent successfully!")
+            
+        except Exception as e:
+            print(f"❌ Daily digest error: {e}")
+            import traceback
+            traceback.print_exc()
     
     async def start(self):
         """Start the scheduler"""
@@ -158,6 +192,17 @@ class NewsAgentScheduler:
             name='News Pipeline',
             replace_existing=True
         )
+        
+        # Schedule daily digest (e.g., at 9:00 AM UTC / 2:30 PM IST)
+        # Using CronTrigger for specific time
+        self.scheduler.add_job(
+            self.run_daily_digest,
+            CronTrigger(hour=9, minute=0),
+            id='daily_digest',
+            name='Daily Digest',
+            replace_existing=True
+        )
+        print("📅 Daily Digest scheduled for 09:00 UTC")
         
         # Start scheduler
         self.scheduler.start()

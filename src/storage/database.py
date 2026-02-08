@@ -6,7 +6,8 @@ Using SQLAlchemy ORM with SQLite
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import List
 from config.settings import settings
 
 Base = declarative_base()
@@ -99,6 +100,16 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def get_recent_articles(db, hours: int = 24) -> List[Article]:
+    """Get AI-relevant articles from the last N hours"""
+    cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+    return db.query(Article).filter(
+        Article.published_at >= cutoff_time,
+        Article.is_ai_relevant == True,
+        Article.is_verified == True
+    ).order_by(Article.published_at.desc()).all()
 
 
 def init_db():
