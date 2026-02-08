@@ -3,8 +3,20 @@ RSS Feed Fetcher
 Fetches news articles from RSS feeds of trusted sources
 """
 
+import sys
+# Python 3.13 compatibility shim for feedparser (cgi module removed)
+try:
+    import cgi
+except ImportError:
+    try:
+        import legacy_cgi as cgi
+        sys.modules['cgi'] = cgi
+    except ImportError:
+        pass
+
 import feedparser
 import yaml
+
 from datetime import datetime, timedelta
 from typing import List, Dict
 from pathlib import Path

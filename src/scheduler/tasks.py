@@ -67,7 +67,7 @@ class NewsAgentScheduler:
                 is_ai_relevant=is_relevant,
                 ai_confidence=confidence,
                 credibility_score=article_data.get('credibility', 80),
-                is_verified=True if article_data.get('credibility', 0) >= 90 else False,
+                is_verified=True if article_data.get('credibility', 0) >= settings.verification_threshold else False,
                 verification_reason=reasoning
             )
             

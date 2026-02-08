@@ -17,7 +17,7 @@ class AIRelevanceFilter:
     def __init__(self):
         """Initialize Gemini model"""
         genai.configure(api_key=settings.gemini_api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.model = genai.GenerativeModel('gemini-2.0-flash')
         
         # Load keywords from sources config
         sources_path = Path("config/sources.yaml")
