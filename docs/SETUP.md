@@ -101,7 +101,7 @@ git push -u origin main
    - **Name**: `ai-news-agent`
    - **Environment**: `Python 3`
    - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `python -m src.scheduler.tasks`
+   - **Start Command**: `uvicorn src.main:app --host 0.0.0.0 --port $PORT`
 6. Add environment variables:
    - `GEMINI_API_KEY`: your Gemini key
    - `TELEGRAM_BOT_TOKEN`: your bot token
