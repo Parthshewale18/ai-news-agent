@@ -1,3 +1,14 @@
+import sys
+# Python 3.13 compatibility shim for feedparser (cgi module removed)
+try:
+    import cgi
+except ImportError:
+    try:
+        import legacy_cgi as cgi
+        sys.modules['cgi'] = cgi
+    except ImportError:
+        pass
+
 import asyncio
 import logging
 from contextlib import asynccontextmanager

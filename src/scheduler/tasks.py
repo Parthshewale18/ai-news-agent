@@ -3,6 +3,17 @@ Main News Pipeline Scheduler
 Orchestrates the complete flow: Ingest → Filter → Summarize → Notify
 """
 
+import sys
+# Python 3.13 compatibility shim for feedparser (cgi module removed)
+try:
+    import cgi
+except ImportError:
+    try:
+        import legacy_cgi as cgi
+        sys.modules['cgi'] = cgi
+    except ImportError:
+        pass
+
 import asyncio
 import time
 from datetime import datetime
