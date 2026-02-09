@@ -15,7 +15,7 @@ class NewsSummarizer:
     def __init__(self):
         """Initialize Gemini model"""
         genai.configure(api_key=settings.gemini_api_key)
-        self.model = genai.GenerativeModel('gemini-2.0-flash')
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
     
     def summarize(self, article: Dict) -> Dict:
         """
